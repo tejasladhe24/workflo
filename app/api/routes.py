@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from app.engine.dag import validate_dag
+from app.plugins.registry import registry
 from app.schemas.run import RunDetail, RunStatus, TriggerRunRequest, TriggerRunResponse
 from app.schemas.workflow import WorkflowDefinition
 from app.store.redis_store import get_store
@@ -16,12 +17,24 @@ def health() -> dict:
     return {"status": "ok" if redis_ok else "degraded", "redis": redis_ok}
 
 
+@router.get("/nodes")
+def list_nodes() -> dict:
+    return {"nodes": registry.list_types()}
+
+
 @router.post("/workflows", response_model=WorkflowDefinition)
 def register_workflow(workflow: WorkflowDefinition) -> WorkflowDefinition:
     try:
         validate_dag(workflow.nodes, workflow.edges)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    unknown = registry.validate_node_types([node.type for node in workflow.nodes])
+    if unknown:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unknown node types: {', '.join(unknown)}",
+        )
 
     store = get_store()
     store.save_workflow(workflow)

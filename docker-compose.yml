@@ -7,6 +7,32 @@ services:
     ports:
       - "6379:6379"
 
+  minio:
+    container_name: minio
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+
+  registry-init:
+    container_name: registry-init
+    build:
+      context: .
+      dockerfile: registry/Dockerfile
+    environment:
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      BUCKET_NAME: plugins
+    depends_on:
+      - minio
+
   api:
     container_name: api
     build: .
@@ -17,8 +43,17 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      BUCKET_NAME: plugins
+      PLUGINS_DIR: /app/plugins
+      PLUGINS_ENABLED: "true"
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      registry-init:
+        condition: service_completed_successfully
 
   worker:
     container_name: worker
@@ -28,5 +63,17 @@ services:
       REDIS_URL: redis://redis:6379/0
       CELERY_BROKER_URL: redis://redis:6379/0
       CELERY_RESULT_BACKEND: redis://redis:6379/1
+      S3_ENDPOINT: http://minio:9000
+      S3_ACCESS_KEY: minioadmin
+      S3_SECRET_KEY: minioadmin
+      BUCKET_NAME: plugins
+      PLUGINS_DIR: /app/plugins
+      PLUGINS_ENABLED: "true"
     depends_on:
-      - redis
+      redis:
+        condition: service_started
+      registry-init:
+        condition: service_completed_successfully
+
+volumes:
+  minio_data:

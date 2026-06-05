@@ -1,0 +1,12 @@
+{
+  "id": "plugin-demo",
+  "nodes": [
+    { "id": "seed", "type": "constant", "config": { "key": "msg", "value": "hello world" } },
+    { "id": "upper", "type": "uppercase", "config": {} },
+    { "id": "join", "type": "concat", "config": { "separator": " ", "fields": ["msg"] } }
+  ],
+  "edges": [
+    { "from": "seed", "to": "upper" },
+    { "from": "upper", "to": "join" }
+  ]
+}

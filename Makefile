@@ -1,4 +1,4 @@
-.PHONY: default sync dev worker api redis docker down
+.PHONY: default sync dev worker api redis minio docker down publish-plugins plugin-workflow
 
 default: sync
 
@@ -14,7 +14,10 @@ worker:
 api:
 	uv run uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 
-dev: redis
+minio:
+	docker compose up -d minio
+
+dev: redis minio publish-plugins
 	@$(MAKE) -j2 worker api
 
 docker:
@@ -22,3 +25,9 @@ docker:
 
 down:
 	docker compose down
+
+publish-plugins:
+	docker compose run --rm registry-init
+
+plugin-workflow:
+	curl -s -X POST http://localhost:8000/workflows -H 'Content-Type: application/json' -d @sample_plugin_workflow.json
