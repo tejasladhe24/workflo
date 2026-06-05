@@ -1,0 +1,12 @@
+{
+  "id": "demo-flow",
+  "nodes": [
+    { "id": "a", "type": "delay", "config": { "seconds": 2 } },
+    { "id": "b", "type": "transform", "config": { "set": { "msg": "hello" } } },
+    { "id": "c", "type": "noop", "config": {} }
+  ],
+  "edges": [
+    { "from": "a", "to": "c" },
+    { "from": "b", "to": "c" }
+  ]
+}

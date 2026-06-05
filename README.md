@@ -1,0 +1,69 @@
+# DAG Workflow Engine
+
+Minimal n8n-style DAG workflow executor using FastAPI, Celery, and Redis.
+
+## Architecture
+
+- **FastAPI** exposes workflow registration and run APIs
+- **Redis** stores workflow definitions and run state
+- **Celery workers** execute DAG nodes in parallel as dependencies complete
+
+## Quick start
+
+```bash
+cd workflow-engine
+docker compose up --build
+```
+
+## API usage
+
+The API is exposed on **port 8000** (host) to avoid clashing with other services on 8000.
+
+Register the sample fork-join workflow:
+
+```bash
+curl -X POST http://localhost:8000/workflows \
+  -H 'Content-Type: application/json' \
+  -d @sample_workflow.json
+```
+
+Trigger a run:
+
+```bash
+curl -X POST http://localhost:8000/workflows/demo-flow/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"input": {"seed": 1}}'
+```
+
+Poll run status (replace `{run_id}` with the returned id):
+
+```bash
+curl http://localhost:8000/runs/{run_id}
+```
+
+Health check:
+
+```bash
+curl http://localhost:8000/health
+```
+
+## Node types
+
+| Type        | Config                      | Behavior                          |
+| ----------- | --------------------------- | --------------------------------- |
+| `noop`      | `{}`                        | Passes parent outputs through     |
+| `delay`     | `{"seconds": 1}`            | Sleeps then passes inputs through |
+| `transform` | `{"set": {"key": "value"}}` | Merges `set` onto parent outputs  |
+
+## Local development (without Docker)
+
+```bash
+make          # uv sync
+make dev      # start redis + celery worker + uvicorn (parallel)
+```
+
+Other targets: `make worker`, `make api`, `make redis`, `make docker`, `make down`.
+
+Set env vars from `.env.example` if not using defaults.
+
+To add a dependency: `uv add <package>`. Lockfile updates are committed via `uv.lock`.
