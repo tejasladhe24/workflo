@@ -1,0 +1,27 @@
+{
+  "id": "search-to-story-demo",
+  "nodes": [
+    {
+      "id": "search",
+      "type": "web_search",
+      "config": {
+        "query": "What is the history and mythology of dragons across cultures?",
+        "max_iterations": 3,
+        "model": "gpt-4o-mini",
+        "openai_base_url": "<openai_base_url>",
+        "openai_api_key": "<openai_api_key>",
+        "serp_api_key": "<serp_api_key>"
+      }
+    },
+    {
+      "id": "story",
+      "type": "story_writer",
+      "config": {
+        "model": "gpt-4o-mini",
+        "openai_base_url": "<openai_base_url>",
+        "openai_api_key": "<openai_api_key>"
+      }
+    }
+  ],
+  "edges": [{ "from": "search", "to": "story" }]
+}

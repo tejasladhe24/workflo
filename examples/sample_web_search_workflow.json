@@ -1,0 +1,26 @@
+{
+  "id": "web-search-demo",
+  "nodes": [
+    {
+      "id": "query",
+      "type": "transform",
+      "config": {
+        "set": {
+          "question": "What is LangGraph and what is it used for?"
+        }
+      }
+    },
+    {
+      "id": "search",
+      "type": "web_search",
+      "config": {
+        "max_iterations": 3,
+        "model": "gpt-4o-mini",
+        "openai_base_url": "<openai_base_url>",
+        "openai_api_key": "<openai_api_key>",
+        "serp_api_key": "<serp_api_key>"
+      }
+    }
+  ],
+  "edges": [{ "from": "query", "to": "search" }]
+}

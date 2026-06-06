@@ -1,4 +1,4 @@
-"""Build example plugin wheel and publish index.json + artifacts to MinIO."""
+"""Build plugin wheels and publish index.json + artifacts to MinIO."""
 
 from __future__ import annotations
 
@@ -7,13 +7,47 @@ import os
 import subprocess
 import time
 from pathlib import Path
+from typing import TypedDict
 
 import boto3
 from botocore.client import Config
 from botocore.exceptions import ClientError
 
 ROOT = Path(__file__).resolve().parents[1]
-PLUGIN_DIR = ROOT / "packages" / "example-nodes"
+PACKAGES_DIR = ROOT / "packages"
+
+
+class PluginSpec(TypedDict):
+    name: str
+    version: str
+    package: str
+    directory: str
+    nodes: list[str]
+
+
+PLUGINS: list[PluginSpec] = [
+    {
+        "name": "example-nodes",
+        "version": "0.1.0",
+        "package": "example_nodes",
+        "directory": "example-nodes",
+        "nodes": ["uppercase", "concat", "constant"],
+    },
+    {
+        "name": "web-search",
+        "version": "0.1.0",
+        "package": "web_search",
+        "directory": "web-search",
+        "nodes": ["web_search"],
+    },
+    {
+        "name": "story-writer",
+        "version": "0.1.0",
+        "package": "story_writer",
+        "directory": "story-writer",
+        "nodes": ["story_writer"],
+    },
+]
 
 
 def _env(name: str, default: str) -> str:
@@ -46,45 +80,47 @@ def _wait_for_minio(bucket: str, retries: int = 30) -> None:
     raise RuntimeError(f"MinIO bucket {bucket!r} not ready after {retries} attempts")
 
 
-def _build_wheel() -> Path:
-    dist = PLUGIN_DIR / "dist"
+def _build_wheel(plugin_dir: Path, plugin_name: str) -> Path:
+    dist = plugin_dir / "dist"
     dist.mkdir(parents=True, exist_ok=True)
     for wheel in dist.glob("*.whl"):
         wheel.unlink()
     subprocess.run(
-        ["uv", "build", str(PLUGIN_DIR), "--out-dir", str(dist)],
+        ["uv", "build", str(plugin_dir), "--out-dir", str(dist)],
         check=True,
     )
     wheels = list(dist.glob("*.whl"))
     if not wheels:
-        raise RuntimeError("No wheel produced for example-nodes")
+        raise RuntimeError(f"No wheel produced for {plugin_name}")
     return wheels[0]
+
+
+def _publish_plugin(client, bucket: str, spec: PluginSpec) -> dict:
+    plugin_dir = PACKAGES_DIR / spec["directory"]
+    wheel_path = _build_wheel(plugin_dir, spec["name"])
+    s3_key = f"{spec['name']}/{spec['version']}/{wheel_path.name}"
+
+    client.upload_file(str(wheel_path), bucket, s3_key)
+    print(f"Uploaded s3://{bucket}/{s3_key}")
+
+    return {
+        "name": spec["name"],
+        "version": spec["version"],
+        "package": spec["package"],
+        "wheel_path": s3_key,
+        "nodes": spec["nodes"],
+    }
 
 
 def main() -> None:
     bucket = _env("BUCKET_NAME", "plugins")
-    plugin_name = "example-nodes"
-    version = "0.1.0"
 
     _wait_for_minio(bucket)
-    wheel_path = _build_wheel()
-    s3_key = f"{plugin_name}/{version}/{wheel_path.name}"
-
     client = _s3_client()
-    client.upload_file(str(wheel_path), bucket, s3_key)
-    print(f"Uploaded s3://{bucket}/{s3_key}")
 
-    index = {
-        "plugins": [
-            {
-                "name": plugin_name,
-                "version": version,
-                "package": "example_nodes",
-                "wheel_path": s3_key,
-                "nodes": ["uppercase", "concat", "constant"],
-            }
-        ]
-    }
+    index_plugins = [_publish_plugin(client, bucket, spec) for spec in PLUGINS]
+
+    index = {"plugins": index_plugins}
     index_bytes = json.dumps(index, indent=2).encode()
     client.put_object(
         Bucket=bucket,

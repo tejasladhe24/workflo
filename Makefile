@@ -1,4 +1,4 @@
-.PHONY: default sync dev worker api redis minio docker down publish-plugins plugin-workflow
+.PHONY: default sync dev worker api redis minio docker down publish-plugins plugin-workflow web-search-workflow search-to-story-workflow
 
 default: sync
 
@@ -30,4 +30,10 @@ publish-plugins:
 	docker compose run --rm registry-init
 
 plugin-workflow:
-	curl -s -X POST http://localhost:8000/workflows -H 'Content-Type: application/json' -d @sample_plugin_workflow.json
+	curl -s -X POST http://localhost:8000/workflows -H 'Content-Type: application/json' -d @examples/sample_plugin_workflow.json
+
+web-search-workflow:
+	curl -s -X POST http://localhost:8000/workflows -H 'Content-Type: application/json' -d @examples/sample_web_search_workflow.json
+
+search-to-story-workflow:
+	curl -s -X POST http://localhost:8000/workflows -H 'Content-Type: application/json' -d @examples/sample_search_to_story_workflow.json

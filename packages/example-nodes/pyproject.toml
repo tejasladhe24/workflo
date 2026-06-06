@@ -1,11 +1,11 @@
 [project]
 name = "example-nodes"
 version = "0.1.0"
-description = "Example community workflow nodes for Starboard"
+description = "Example community workflow nodes for Workflo"
 requires-python = ">=3.11"
 dependencies = []
 
-[project.entry-points."starboard.nodes"]
+[project.entry-points."workflo.nodes"]
 uppercase = "example_nodes.handlers:handle_uppercase"
 concat = "example_nodes.handlers:handle_concat"
 constant = "example_nodes.handlers:handle_constant"

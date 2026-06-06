@@ -8,7 +8,7 @@ COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
 COPY app ./app
-COPY sample_workflow.json .
+COPY examples ./examples
 
 ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH=/app

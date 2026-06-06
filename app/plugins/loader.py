@@ -58,7 +58,7 @@ def _discover_handlers(target_dir: Path, package: str) -> dict[str, HandlerFn]:
         sys.path.insert(0, path_str)
 
     handlers: dict[str, HandlerFn] = {}
-    for ep in entry_points(group="starboard.nodes"):
+    for ep in entry_points(group="workflo.nodes"):
         if ep.module and ep.module.split(".")[0] == package:
             handlers[ep.name] = ep.load()
     return handlers

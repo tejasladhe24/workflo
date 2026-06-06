@@ -6,7 +6,7 @@ WORKDIR /app
 
 RUN uv pip install --system boto3 hatchling
 
-COPY packages/example-nodes ./packages/example-nodes
+COPY packages ./packages
 COPY registry/publish.py ./registry/publish.py
 
 CMD ["python", "registry/publish.py"]
